@@ -94,7 +94,8 @@ class NetworkingTest {
                         int fileNumber = index;
                         uploads.add(executor.submit(() -> {
                             var source = new ByteArrayInputStream(payload) {
-                                @Override public synchronized int read(byte[] data, int offset, int length) {
+                                @Override public int read(byte[] data, int offset, int length) {
+                                    // Wait before entering the superclass monitor so this virtual thread can unmount.
                                     entered.countDown();
                                     try {
                                         if (!release.await(10, TimeUnit.SECONDS)) return -1;
@@ -108,7 +109,8 @@ class NetworkingTest {
                             return client.upload("file-" + fileNumber + ".txt", payload.length, source, n -> {}, s -> {});
                         }));
                     }
-                    assertTrue(entered.await(5, TimeUnit.SECONDS));
+                    assertTrue(entered.await(5, TimeUnit.SECONDS),
+                            () -> entered.getCount() + " uploads had not reached the transfer gate");
                     var status = client.status();
                     assertEquals(2, status.onlineCount());
                     assertEquals(count, status.activeWorkers());
