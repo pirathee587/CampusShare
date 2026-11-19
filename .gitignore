@@ -1,0 +1,9 @@
+backend/target/
+frontend/node_modules/
+frontend/dist/
+.env
+*.p12
+*.jks
+*.cer
+data/*
+!data/.gitkeep
